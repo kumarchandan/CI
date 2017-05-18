@@ -9,6 +9,7 @@ class searchnet:
     def __del__(self):
         self.con.close()
     
+    # db tables to support neural network model - 
     def makeTables(self):
         try:
             self.con.execute("create table hiddennode(create_key)")
@@ -18,7 +19,10 @@ class searchnet:
         except Exception as e:
             print('error while creating tables or table already exists', e)
         
-    # get strength
+    # getStrength - determines the current strength of the connection. since new connection are only created
+    # when necessary this method has to return default value if there are no connections
+    # for links from words to hiddenlayer, the default value is -0.2, so that, by default, extra words will have a
+    # slightly negative effect on the activation level of a hidden node.
     def getStrength(self, fromid, toid, layer):
         if layer == 0:
             table = 'hiddenword'
@@ -67,3 +71,55 @@ class searchnet:
                 for urlid in urls:
                     self.setStrength(hiddenid, urlid, 1, 0.1)
             self.con.commit()
+
+    def getAllHiddenIds(self, wordids, urlids):
+        l1 = {}
+        for wordid in wordids:
+            cur = self.con.execute("select toid from hiddenword where fromid={}".format(wordid))
+            for urlid in urlids:
+                cur = self.con.execute("select fromid from hiddenurl where toid={}".format(urlid))
+                for row in cur:
+                    l1[row[0]] = 1
+            return l1.keys()
+    
+    # setup network
+    def setupNetwork(self, wordids, urlids):
+        # value lists
+        self.wordids = wordids
+        self.urlids = urlids
+        self.hiddenids = self.getAllHiddenIds(wordids, urlids)
+
+        # node outputs
+        self.ai = [1.0] * len(self.wordids)
+        self.ao = [1.0]*len(self.urlids)
+        self.ah = [1.0] * len(self.hiddenids)
+
+        # create weights matrix
+        self.wi = [[self.getStrength(wordid, hiddenid, 0) for hiddenid in self.hiddenids] for wordid in self.wordids]
+        self.wo = [[self.getStrength(hiddenid, urlid, 1) for urlid in self.urlids] for hiddenid in self.hiddenids]
+
+    # feedforward
+    def feedforward(self):
+        # the only inputs are the query words
+        for i in range(len(self.wordids)):
+            self.ai[i] = 1.0
+
+        # hidden activations
+        for j in range(len(self.hiddenids)):
+            sum = 0.0
+            for i in range(len(self.wordids)):
+                sum = sum + self.ai[i] * self.wi[i][j]
+            self.ah[j] = tanh(sum)
+
+        # output activations
+        for k in range(len(self.urlids)):
+            sum = 0.0
+            for j in range(len(self.hiddenids)):
+                sum = sum + self.ah[j] * self.wo[j][k]
+            self.ao[k] = tanh(sum)
+        return self.ao[:]
+    
+    # get result
+    def getresult(self, wordids, urlids):
+        self.setupNetwork(wordids, urlids)
+        return self.feedforward()

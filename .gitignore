@@ -43,3 +43,5 @@ npm-debug.log
 /public/data/
 .vscode
 NOTES.md
+.idea
+.vscode

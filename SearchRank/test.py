@@ -19,20 +19,23 @@
 # neural network test
 import neuralnetwork as nn
 mynet = nn.searchnet('nn.db')
+
 # mynet.makeTables()
 
 wWorld, wRiver, wBank = 101, 102, 103           # words
 uWorldBank, uRiver, uEarth = 201, 202, 203      # urls
 
+print(mynet.getresult([wWorld,wBank],[uWorldBank,uRiver,uEarth]))
+
 # mynet.generateHiddenNode([wWorld, wBank], [uWorldBank, uRiver, uEarth])
-print('hidden word')
-for c in mynet.con.execute('select * from hiddenword'):
-    print(c)
+# print('hidden word')
+# for c in mynet.con.execute('select * from hiddenword'):
+#     print(c)
 
-print('hidden url')
-for c in mynet.con.execute('select * from hiddenurl'):
-    print(c)
+# print('hidden url')
+# for c in mynet.con.execute('select * from hiddenurl'):
+#     print(c)
 
-print('hidden node')
-for c in mynet.con.execute('select * from hiddennode'):
-    print(c)
+# print('hidden node')
+# for c in mynet.con.execute('select * from hiddennode'):
+#     print(c)
